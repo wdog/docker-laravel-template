@@ -1,0 +1,35 @@
+FROM php:8.1-fpm-alpine
+
+ARG UID
+ARG GID
+
+ENV UID=${UID}
+ENV GID=${GID}
+
+# Updating the packages
+RUN apk update && \
+    apk upgrade --available && \
+    sync && \
+    apk add nodejs npm bzip2-dev libzip-dev zlib-dev libpng-dev
+
+
+RUN apk --no-cache add pcre-dev ${PHPIZE_DEPS} \
+  && pecl install redis  \
+  && docker-php-ext-install  bz2 gd zip pdo pdo_mysql bcmath \
+  && docker-php-ext-enable redis bz2 gd zip pdo pdo_mysql bcmath \
+  && apk del pcre-dev ${PHPIZE_DEPS} \
+  && rm -rf /tmp/pear
+
+
+RUN apk add libxml2-dev
+RUN docker-php-ext-install xml
+RUN docker-php-ext-enable xml
+
+RUN cd /usr/local/etc/php/conf.d/ && \
+  echo 'memory_limit = 512M' >> /usr/local/etc/php/conf.d/docker-php-memlimit.ini
+
+RUN addgroup -g ${GID} laravel
+RUN adduser -G laravel -D -s /bin/sh -u ${UID} laravel
+
+# check
+# docker-compose exec laravel-php php --ini

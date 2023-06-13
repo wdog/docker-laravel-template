@@ -1,0 +1,29 @@
+FROM php:8.1-fpm-alpine
+
+ARG UID
+ARG GID
+
+ENV UID=${UID}
+ENV GID=${GID}
+
+# Updating the packages
+RUN apk update && \
+    apk upgrade --available && \
+    sync && \
+    apk add nodejs npm
+
+RUN docker-php-ext-install pdo pdo_mysql bcmath
+
+RUN apk --no-cache add pcre-dev ${PHPIZE_DEPS} \
+  && pecl install redis \
+  && docker-php-ext-enable redis \
+  && apk del pcre-dev ${PHPIZE_DEPS} \
+  && rm -rf /tmp/pear
+
+RUN addgroup -g ${GID} laravel
+RUN adduser -G laravel -D -s /bin/sh -u ${UID} laravel
+
+# CRON
+COPY crontab /etc/crontabs/root
+RUN touch /var/log/cron.log
+ENTRYPOINT ["crond", "-f"]
