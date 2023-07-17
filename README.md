@@ -45,7 +45,7 @@ export default defineConfig({
     server: {
         hmr: {
             host: "localhost",
-            # if using https
+            // if using https
             https: true,
         },
         watch: {
